@@ -22,6 +22,8 @@ class UserRegister(BaseModel):
     password: str = Field(..., min_length=8, description="Password (minimum 8 characters)")
     full_name: str = Field(..., min_length=2, max_length=100, description="User's full name")
     phone: str = Field(..., min_length=10, max_length=15, description="User's phone number")
+    company_name: Optional[str] = Field(None, max_length=255, description="Company name")
+    company_logo: Optional[str] = Field(None, description="Base64 encoded company logo")
     
     @validator('password')
     def validate_password(cls, v):
@@ -62,6 +64,15 @@ class Token(BaseModel):
     token_type: str = Field(default="bearer", description="Token type")
 
 
+class LoginResponse(BaseModel):
+    """
+    Schema for login response including token and user data.
+    """
+    access_token: str = Field(..., description="JWT access token")
+    token_type: str = Field(default="bearer", description="Token type")
+    user: "UserResponse" = Field(..., description="User information")
+
+
 class UserResponse(BaseModel):
     """
     Schema for user data response.
@@ -74,6 +85,8 @@ class UserResponse(BaseModel):
     full_name: str = Field(..., description="User's full name")
     phone: str = Field(..., description="User's phone number")
     role: str = Field(..., description="User's role in the system")
+    company_name: Optional[str] = Field(None, description="User's company name")
+    company_logo: Optional[str] = Field(None, description="User's company logo")
     
     class Config:
         from_attributes = True

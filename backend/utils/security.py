@@ -12,8 +12,8 @@ from typing import Optional
 import os
 
 
-# Password hashing context using bcrypt
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing context using pbkdf2_sha256 (more reliable than bcrypt)
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 
 # JWT Configuration from environment variables

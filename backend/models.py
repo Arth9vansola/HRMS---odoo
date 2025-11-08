@@ -66,6 +66,9 @@ class User(Base):
     full_name = Column(String(255), nullable=False)
     phone = Column(String(20), nullable=True)
     role = Column(Enum(UserRole), nullable=False, default=UserRole.EMPLOYEE)
+    # Company information for registration
+    company_name = Column(String(255), nullable=True)
+    company_logo = Column(String(1000), nullable=True)  # Base64 or URL
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     
@@ -96,7 +99,7 @@ class Employee(Base):
     user = relationship("User", back_populates="employee")
     reporting_manager = relationship("Employee", remote_side=[id])
     attendance_records = relationship("Attendance", back_populates="employee", cascade="all, delete-orphan")
-    leave_requests = relationship("LeaveRequest", back_populates="employee", cascade="all, delete-orphan")
+    leave_requests = relationship("LeaveRequest", back_populates="employee", cascade="all, delete-orphan", foreign_keys="LeaveRequest.employee_id")
     leave_allocations = relationship("LeaveAllocation", back_populates="employee", cascade="all, delete-orphan")
     payroll_records = relationship("Payroll", back_populates="employee", cascade="all, delete-orphan")
     payslips = relationship("Payslip", back_populates="employee", cascade="all, delete-orphan")

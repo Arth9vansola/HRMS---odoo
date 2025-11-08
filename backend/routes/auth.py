@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
 from database import get_db
 from models import User, UserRole, Employee
-from schemas import UserRegister, UserLogin, Token, UserResponse
+from schemas import UserRegister, UserLogin, Token, UserResponse, LoginResponse
 from utils.security import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from utils.permissions import get_current_user, require_hr_officer
 
@@ -71,7 +71,15 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db), curre
 	login_id = _generate_login_id(user_data.full_name, joining_year, db)
 
 	# Create user instance with Employee role
-	new_user = User(email=user_data.email, password_hash=hashed, full_name=user_data.full_name, phone=user_data.phone, role=UserRole.EMPLOYEE)
+	new_user = User(
+		email=user_data.email, 
+		password_hash=hashed, 
+		full_name=user_data.full_name, 
+		phone=user_data.phone, 
+		role=UserRole.EMPLOYEE,
+		company_name=user_data.company_name,
+		company_logo=user_data.company_logo
+	)
 	new_user.login_id = login_id
 
 	db.add(new_user)
@@ -85,9 +93,9 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db), curre
 	return {"access_token": token, "token_type": "bearer"}
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=LoginResponse)
 async def login(user_data: UserLogin, db: Session = Depends(get_db)):
-	"""Authenticate user by email and password and return a JWT token."""
+	"""Authenticate user by email and password and return a JWT token with user data."""
 	user = db.query(User).filter(User.email == user_data.email).first()
 	if not user or not verify_password(user_data.password, user.password_hash):
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
@@ -95,7 +103,20 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
 	expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 	token = create_access_token({"sub": str(user.id), "role": str(user.role)}, expires_delta=expires)
 
-	return {"access_token": token, "token_type": "bearer"}
+	return {
+		"access_token": token, 
+		"token_type": "bearer",
+		"user": {
+			"id": user.id,
+			"email": user.email,
+			"login_id": user.login_id,
+			"full_name": user.full_name,
+			"phone": user.phone,
+			"role": user.role.value,
+			"company_name": user.company_name,
+			"company_logo": user.company_logo
+		}
+	}
 
 
 @router.get("/me", response_model=UserResponse)

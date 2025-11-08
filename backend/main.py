@@ -7,7 +7,7 @@ from routes import auth, users, attendance, leaves, payroll, analytics
 app = FastAPI(title="WorkZen HRMS", version="1.0.0")
 
 # Setup CORS
-origins = ["http://localhost:3000", "http://localhost:8000"]
+origins = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -27,6 +27,11 @@ app.include_router(analytics.router)
 @app.get("/")
 def root():
     return {"message": "WorkZen HRMS API"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 @app.get("/health")
 def health():
