@@ -1,49 +1,50 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { FiMail, FiPhone, FiCalendar, FiMapPin, FiUser, FiBriefcase, FiDollarSign, FiLock, FiFileText, FiPlus, FiEdit2 } from 'react-icons/fi';
+import { useParams, useNavigate } from 'react-router-dom';
+import { FiArrowLeft, FiMail, FiPhone, FiCalendar, FiMapPin, FiUser, FiBriefcase, FiDollarSign } from 'react-icons/fi';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 
-const Profile = () => {
-  const { user } = useAuth();
+const EmployeeDetails = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('resume');
-  const [skills, setSkills] = useState(['JavaScript', 'React', 'Node.js']);
-  const [certifications, setCertifications] = useState(['AWS Certified', 'Scrum Master']);
-  const [about, setAbout] = useState('Passionate software developer with 5+ years of experience...');
-  const [jobLove, setJobLove] = useState('Building scalable applications and solving complex problems.');
-  const [interests, setInterests] = useState('Reading tech blogs, hiking, and photography.');
+  const [isPublicView, setIsPublicView] = useState(false);
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    fetchEmployee();
+  }, [id]);
 
-  const fetchProfile = async () => {
+  const fetchEmployee = async () => {
     try {
-      const { data } = await api.get(`/employees/${user._id}`);
+      const { data } = await api.get(`/employees/${id}`);
       setEmployee(data.data);
+      setIsPublicView(data.isPublicView || false);
     } catch (error) {
-      toast.error('Failed to fetch profile');
+      toast.error('Failed to fetch employee details');
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <div className="text-center py-10 text-gray-400">Loading...</div>;
+    return <div className="text-center py-10">Loading...</div>;
   }
 
   if (!employee) {
-    return <div className="text-center py-10 text-gray-400">Profile not found</div>;
+    return <div className="text-center py-10">Employee not found</div>;
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-white">My Profile</h1>
+      <button
+        onClick={() => navigate('/employees')}
+        className="flex items-center text-gray-400 hover:text-white transition-colors"
+      >
+        <FiArrowLeft className="mr-2" />
+        Back to Employees
+      </button>
 
       {/* Header Card with Profile */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-8">
@@ -124,13 +125,13 @@ const Profile = () => {
               <span className="text-gray-400">Full Name</span>
               <span className="text-white font-medium">{employee.firstName} {employee.lastName}</span>
             </div>
-            {employee.dateOfBirth && (
+            {!isPublicView && employee.dateOfBirth && (
               <div className="flex justify-between py-3 border-b border-gray-700">
                 <span className="text-gray-400">Date of Birth</span>
                 <span className="text-white font-medium">{format(new Date(employee.dateOfBirth), 'MMM dd, yyyy')}</span>
               </div>
             )}
-            {employee.gender && (
+            {!isPublicView && employee.gender && (
               <div className="flex justify-between py-3 border-b border-gray-700">
                 <span className="text-gray-400">Gender</span>
                 <span className="text-white font-medium">{employee.gender}</span>
@@ -161,16 +162,22 @@ const Profile = () => {
               <span className="text-gray-400">Designation</span>
               <span className="text-white font-medium">{employee.designation}</span>
             </div>
-            {employee.role && (
+            {!isPublicView && employee.role && (
               <div className="flex justify-between py-3 border-b border-gray-700">
                 <span className="text-gray-400">Role</span>
                 <span className="text-white font-medium capitalize">{employee.role}</span>
               </div>
             )}
-            {employee.employmentType && (
+            {!isPublicView && employee.employmentType && (
               <div className="flex justify-between py-3">
                 <span className="text-gray-400">Employment Type</span>
                 <span className="text-white font-medium">{employee.employmentType}</span>
+              </div>
+            )}
+            {isPublicView && (
+              <div className="flex justify-between py-3">
+                <span className="text-gray-400">Status</span>
+                <span className="text-white font-medium">{employee.status}</span>
               </div>
             )}
           </div>
@@ -190,11 +197,11 @@ const Profile = () => {
               <span className="text-gray-400 block mb-2">Email Address</span>
               <span className="text-white font-medium">{employee.email}</span>
             </div>
-            <div className={`py-3 ${employee.address ? 'border-b border-gray-700' : ''}`}>
+            <div className={`py-3 ${!isPublicView ? 'border-b border-gray-700' : ''}`}>
               <span className="text-gray-400 block mb-2">Phone Number</span>
               <span className="text-white font-medium">{employee.phone}</span>
             </div>
-            {employee.address && (
+            {!isPublicView && employee.address && (
               <div className="py-3">
                 <span className="text-gray-400 block mb-2">Address</span>
                 <span className="text-white font-medium">
@@ -205,8 +212,8 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Financial Information Card */}
-        {employee.salary && (
+        {/* Financial Information Card - Only show for non-public view */}
+        {!isPublicView && (
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center">
@@ -241,8 +248,8 @@ const Profile = () => {
         )}
       </div>
 
-      {/* Emergency Contact Card */}
-      {employee.emergencyContact && (
+      {/* Emergency Contact Card - Only show for non-public view */}
+      {!isPublicView && employee.emergencyContact && (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <h3 className="text-xl font-semibold text-white mb-6">Emergency Contact</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -265,4 +272,4 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default EmployeeDetails;

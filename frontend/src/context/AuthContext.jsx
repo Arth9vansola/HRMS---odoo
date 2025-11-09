@@ -1,71 +1,59 @@
-import React, { createContext, useState, useEffect } from 'react'
+import { createContext, useState, useContext, useEffect } from 'react';
+import api from '../utils/api';
 
-export const AuthContext = createContext()
+const AuthContext = createContext();
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => {
-    try {
-      return localStorage.getItem('token') || null
-    } catch (e) {
-      return null
-    }
-  })
-
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // On mount, we could fetch user profile if token exists
-    if (token) {
-      try {
-        const raw = localStorage.getItem('user')
-        if (raw) setUser(JSON.parse(raw))
-      } catch (e) {
-        // ignore malformed user payload
-      }
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      setUser(JSON.parse(userData));
     }
-  }, [token])
+    setLoading(false);
+  }, []);
 
-  const login = (newToken, userObj) => {
+  const login = async (email, password) => {
     try {
-      localStorage.setItem('token', newToken)
-      if (userObj) {
-        // persist company-related fields if present
-        const toSave = {
-          ...userObj,
-          company_name: userObj.company_name || (userObj.company && userObj.company.name) || null,
-          company_logo: userObj.company_logo || (userObj.company && userObj.company.logo) || null,
-        }
-        localStorage.setItem('user', JSON.stringify(toSave))
-      }
-    } catch (e) {
-      // ignore
+      const { data } = await api.post('/auth/login', { email, password });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.data));
+      setUser(data.data);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Login failed',
+      };
     }
-    setToken(newToken)
-    if (userObj) {
-      const enriched = {
-        ...userObj,
-        company_name: userObj.company_name || (userObj.company && userObj.company.name) || null,
-        company_logo: userObj.company_logo || (userObj.company && userObj.company.logo) || null,
-      }
-      setUser(enriched)
-    }
-  }
+  };
 
   const logout = () => {
-    try {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-    } catch (e) {
-      // ignore
-    }
-    setToken(null)
-    setUser(null)
-    if (typeof window !== 'undefined') window.location.href = '/login'
-  }
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+  };
 
-  return (
-    <AuthContext.Provider value={{ token, user, login, logout, setUser }}>
-      {children}
-    </AuthContext.Provider>
-  )
-}
+  const value = {
+    user,
+    login,
+    logout,
+    loading,
+    isAuthenticated: !!user,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

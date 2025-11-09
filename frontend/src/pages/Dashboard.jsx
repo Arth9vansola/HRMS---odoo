@@ -1,160 +1,162 @@
-import React from 'react'
-import { useAuth } from '../hooks/useAuth'
+import { useState, useEffect } from 'react';
+import { FiUsers, FiLayers, FiCheckCircle, FiFileText } from 'react-icons/fi';
+import api from '../utils/api';
+import { toast } from 'react-toastify';
 
-export default function Dashboard() {
-  const { user } = useAuth()
+const Dashboard = () => {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - will be replaced with real API calls later
-  const metrics = {
-    totalEmployees: 142,
-    presentToday: 128,
-    absentToday: 14,
-    pendingLeaves: 8
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      const { data } = await api.get('/dashboard/stats');
+      setStats(data.data);
+    } catch (error) {
+      toast.error('Failed to fetch dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-10">Loading...</div>;
   }
 
-  const recentActivities = [
-    { id: 1, type: 'Check-in', user: 'John Doe', time: '09:15 AM', date: 'Today' },
-    { id: 2, type: 'Leave Applied', user: 'Jane Smith', time: '08:30 AM', date: 'Today' },
-    { id: 3, type: 'Payslip Generated', user: 'Mike Johnson', time: 'Yesterday', date: '2:45 PM' },
-    { id: 4, type: 'Check-out', user: 'Sarah Wilson', time: 'Yesterday', date: '6:00 PM' },
-    { id: 5, type: 'Leave Approved', user: 'David Brown', time: '2 days ago', date: '11:20 AM' }
-  ]
-
-  const MetricCard = ({ title, value, color, icon }) => (
-    <div className={`bg-white rounded-lg shadow-md p-6 border-l-4 border-${color}-500 hover:shadow-lg transition-shadow`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-gray-600 text-sm font-medium">{title}</p>
-          <p className={`text-3xl font-bold text-${color}-600`}>{value}</p>
-        </div>
-        <div className={`text-${color}-500 text-2xl`}>{icon}</div>
-      </div>
-    </div>
-  )
-
-  const QuickActionButton = ({ title, description, color, onClick }) => (
-    <button
-      onClick={onClick}
-      className={`bg-${color}-500 hover:bg-${color}-600 text-white p-4 rounded-lg shadow-md transition-colors w-full text-left`}
-    >
-      <h3 className="font-semibold text-lg">{title}</h3>
-      <p className="text-sm opacity-90">{description}</p>
-    </button>
-  )
+  const statCards = [
+    {
+      title: 'Total Employees',
+      value: stats?.totalEmployees || 0,
+      icon: FiUsers,
+      color: 'bg-blue-500',
+    },
+    {
+      title: 'Departments',
+      value: stats?.totalDepartments || 0,
+      icon: FiLayers,
+      color: 'bg-green-500',
+    },
+    {
+      title: 'Present Today',
+      value: stats?.todayPresent || 0,
+      icon: FiCheckCircle,
+      color: 'bg-purple-500',
+    },
+    {
+      title: 'Pending Leaves',
+      value: stats?.pendingLeaves || 0,
+      icon: FiFileText,
+      color: 'bg-orange-500',
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.full_name || 'User'}!
-          </h1>
-          <p className="text-gray-600 mt-2">Here's what's happening at {user?.company_name || 'your company'} today.</p>
-        </div>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-white">Dashboard</h1>
 
-        {/* Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <MetricCard
-            title="Total Employees"
-            value={metrics.totalEmployees}
-            color="blue"
-            icon="👥"
-          />
-          <MetricCard
-            title="Present Today"
-            value={metrics.presentToday}
-            color="green"
-            icon="✅"
-          />
-          <MetricCard
-            title="Absent Today"
-            value={metrics.absentToday}
-            color="red"
-            icon="❌"
-          />
-          <MetricCard
-            title="Pending Leaves"
-            value={metrics.pendingLeaves}
-            color="yellow"
-            icon="📋"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Activities */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activities</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">Activity</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">User</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentActivities.map((activity) => (
-                      <tr key={activity.id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="py-3 px-4">{activity.type}</td>
-                        <td className="py-3 px-4 text-gray-600">{activity.user}</td>
-                        <td className="py-3 px-4 text-sm text-gray-500">{activity.time} - {activity.date}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div>
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-              <div className="space-y-4">
-                <QuickActionButton
-                  title="Mark Attendance"
-                  description="Clock in/out for today"
-                  color="blue"
-                  onClick={() => alert('Mark Attendance - Coming soon!')}
-                />
-                <QuickActionButton
-                  title="Apply Leave"
-                  description="Request time off"
-                  color="green"
-                  onClick={() => alert('Apply Leave - Coming soon!')}
-                />
-                <QuickActionButton
-                  title="View Payslips"
-                  description="Download salary slips"
-                  color="purple"
-                  onClick={() => alert('View Payslips - Coming soon!')}
-                />
-              </div>
-            </div>
-
-            {/* Company Logo (if available) */}
-            {user?.company_logo && (
-              <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Company</h3>
-                <div className="flex items-center space-x-3">
-                  <img 
-                    src={user.company_logo} 
-                    alt={user.company_name} 
-                    className="h-12 w-12 object-contain rounded"
-                  />
-                  <div>
-                    <p className="font-medium text-gray-900">{user.company_name}</p>
-                    <p className="text-sm text-gray-600">Your Workplace</p>
-                  </div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {statCards.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <div key={index} className="card bg-gray-800 border border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm">{stat.title}</p>
+                  <p className="text-3xl font-bold mt-2 text-white">{stat.value}</p>
+                </div>
+                <div className={`${stat.color} p-4 rounded-lg`}>
+                  <Icon className="text-white" size={24} />
                 </div>
               </div>
-            )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Employees by Department */}
+      <div className="card bg-gray-800 border border-gray-700">
+        <h3 className="text-xl font-semibold mb-4 text-white">Employees by Department</h3>
+        <div className="space-y-3">
+          {stats?.employeesByDepartment?.map((dept, index) => (
+            <div key={index} className="flex items-center justify-between">
+              <span className="text-gray-300">{dept.name}</span>
+              <span className="font-semibold text-white">{dept.count} employees</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent Leave Requests */}
+      <div className="card bg-gray-800 border border-gray-700">
+        <h3 className="text-xl font-semibold mb-4 text-white">Recent Leave Requests</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead>
+              <tr className="border-b border-gray-700">
+                <th className="text-left py-3 px-4 text-gray-400">Employee</th>
+                <th className="text-left py-3 px-4 text-gray-400">Leave Type</th>
+                <th className="text-left py-3 px-4 text-gray-400">Duration</th>
+                <th className="text-left py-3 px-4 text-gray-400">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats?.recentLeaves?.map((leave) => (
+                <tr key={leave._id} className="border-b border-gray-700">
+                  <td className="py-3 px-4 text-gray-300">
+                    {leave.employee?.firstName} {leave.employee?.lastName}
+                  </td>
+                  <td className="py-3 px-4 text-gray-300">{leave.leaveType}</td>
+                  <td className="py-3 px-4 text-gray-300">{leave.numberOfDays} days</td>
+                  <td className="py-3 px-4">
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm ${
+                        leave.status === 'Approved'
+                          ? 'bg-green-100 text-green-800'
+                          : leave.status === 'Rejected'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
+                      {leave.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Monthly Payroll Summary */}
+      <div className="card bg-gray-800 border border-gray-700">
+        <h3 className="text-xl font-semibold mb-4 text-white">Monthly Payroll Summary</h3>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <p className="text-gray-400">Total Payroll</p>
+            <p className="text-2xl font-bold text-white">
+              ${stats?.monthlyPayroll?.totalPayroll?.toLocaleString() || 0}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-400">Processed</p>
+            <p className="text-2xl font-bold text-white">
+              {stats?.monthlyPayroll?.processedCount || 0}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-400">Paid</p>
+            <p className="text-2xl font-bold text-white">
+              {stats?.monthlyPayroll?.paidCount || 0}
+            </p>
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default Dashboard;
